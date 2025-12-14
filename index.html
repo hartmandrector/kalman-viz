@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalman Filter Optimization Viewer</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Kalman Filter Optimization Results Viewer</h1>
+      <p>Load optimizer metadata JSON, parameter JSON, or CSV files to visualize results</p>
+    </header>
+
+    <section class="file-loader">
+      <div class="drop-zone" id="dropZone">
+        <p>📁 Drag & drop files here or click to browse</p>
+        <input type="file" id="fileInput" multiple accept=".json,.csv" style="display: none;">
+      </div>
+      <button id="browseBtn" class="btn-primary">Browse Files</button>
+      <button id="clearBtn" class="btn-secondary">Clear All</button>
+    </section>
+
+    <section class="file-list" id="fileList">
+      <h3>Loaded Files (<span id="fileCount">0</span>)</h3>
+      <ul id="fileListItems"></ul>
+    </section>
+
+    <section class="controls">
+      <h3>Parameter Plot Controls</h3>
+      <div class="control-group">
+        <label for="xAxis">X-Axis:</label>
+        <select id="xAxis">
+          <option value="">-- Select X-Axis --</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="yAxis">Y-Axis:</label>
+        <select id="yAxis" multiple size="5">
+          <option value="">-- Select Y-Axis (multi-select) --</option>
+        </select>
+      </div>
+      <button id="plotBtn" class="btn-primary">Update Plot</button>
+    </section>
+
+    <section class="chart-container">
+      <canvas id="chart"></canvas>
+    </section>
+
+    <section class="csv-controls" id="csvControls" style="display: none;">
+      <h3>CSV Time Series</h3>
+      <div class="control-group">
+        <label for="csvColumns">Columns to Plot:</label>
+        <select id="csvColumns" multiple size="5">
+          <option value="">-- Select Columns --</option>
+        </select>
+      </div>
+      <button id="plotCsvBtn" class="btn-primary">Plot CSV Time Series</button>
+    </section>
+
+    <section class="chart-container">
+      <canvas id="csvChart"></canvas>
+    </section>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
