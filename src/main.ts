@@ -69,10 +69,13 @@ class App {
 
     // CSV Plot button
     plotCsvBtn.addEventListener('click', () => {
+      const dataTypeFilterSelect = document.getElementById('dataTypeFilter') as HTMLSelectElement;
+      const selectedDataTypes = Array.from(dataTypeFilterSelect.selectedOptions).map(opt => opt.value);
+      
       const csvColumnsSelect = document.getElementById('csvColumns') as HTMLSelectElement;
       const selectedColumns = Array.from(csvColumnsSelect.selectedOptions).map(opt => opt.value);
       
-      this.chartRenderer.plotCSVTimeSeries(this.loadedFiles, selectedColumns);
+      this.chartRenderer.plotCSVTimeSeries(this.loadedFiles, selectedColumns, selectedDataTypes);
     });
   }
 
@@ -107,8 +110,10 @@ class App {
       fileListItems.appendChild(li);
     });
 
-    // Update parameter dropdowns
+    // Update parameter dropdowns - combine JSON parameters and CSV columns
     const parameters = FileParser.extractParameters(this.loadedFiles);
+    const csvColumns = FileParser.extractCSVColumns(this.loadedFiles);
+    const allFields = [...new Set([...parameters, ...csvColumns])].sort();
     
     const xAxisSelect = document.getElementById('xAxis') as HTMLSelectElement;
     const yAxisSelect = document.getElementById('yAxis') as HTMLSelectElement;
@@ -116,33 +121,45 @@ class App {
     xAxisSelect.innerHTML = '<option value="">-- Select X-Axis --</option>';
     yAxisSelect.innerHTML = '';
     
-    parameters.forEach(param => {
+    allFields.forEach(field => {
       const xOption = document.createElement('option');
-      xOption.value = param;
-      xOption.textContent = param;
+      xOption.value = field;
+      xOption.textContent = field;
       xAxisSelect.appendChild(xOption);
 
       const yOption = document.createElement('option');
-      yOption.value = param;
-      yOption.textContent = param;
+      yOption.value = field;
+      yOption.textContent = field;
       yAxisSelect.appendChild(yOption);
     });
 
     // Update CSV controls
-    const csvColumns = FileParser.extractCSVColumns(this.loadedFiles);
+    const dataTypes = FileParser.extractDataTypes(this.loadedFiles);
     const csvControls = document.getElementById('csvControls')!;
     
-    if (csvColumns.length > 0) {
+    if (allFields.length > 0) {
       csvControls.style.display = 'block';
       
       const csvColumnsSelect = document.getElementById('csvColumns') as HTMLSelectElement;
       csvColumnsSelect.innerHTML = '';
       
-      csvColumns.forEach(column => {
+      allFields.forEach(column => {
         const option = document.createElement('option');
         option.value = column;
         option.textContent = column;
         csvColumnsSelect.appendChild(option);
+      });
+
+      // Populate data type filter
+      const dataTypeFilterSelect = document.getElementById('dataTypeFilter') as HTMLSelectElement;
+      dataTypeFilterSelect.innerHTML = '';
+      
+      dataTypes.forEach(dataType => {
+        const option = document.createElement('option');
+        option.value = dataType;
+        option.textContent = dataType;
+        option.selected = true; // Select all by default
+        dataTypeFilterSelect.appendChild(option);
       });
     } else {
       csvControls.style.display = 'none';

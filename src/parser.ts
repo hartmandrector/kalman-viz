@@ -56,15 +56,18 @@ export class FileParser {
     const headers = lines[0].split(',').map(h => h.trim());
     
     // Parse data rows
-    const rows: Record<string, number>[] = [];
+    const rows: Record<string, number | string>[] = [];
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim());
-      const row: Record<string, number> = {};
+      const row: Record<string, number | string> = {};
       
       headers.forEach((header, idx) => {
         const value = parseFloat(values[idx]);
         if (!isNaN(value)) {
           row[header] = value;
+        } else if (values[idx] !== '') {
+          // Store as string if not a number
+          row[header] = values[idx];
         }
       });
       
@@ -114,6 +117,27 @@ export class FileParser {
     });
 
     return Array.from(columnSet).sort();
+  }
+
+  static extractDataTypes(files: LoadedFile[]): string[] {
+    const dataTypeSet = new Set<string>();
+
+    files.forEach(file => {
+      if (file.type === 'csv') {
+        const data = file.data as CSVData;
+        // Check if data_type column exists
+        if (data.headers.includes('data_type')) {
+          data.rows.forEach(row => {
+            const dataType = row['data_type'];
+            if (dataType && typeof dataType === 'string') {
+              dataTypeSet.add(dataType);
+            }
+          });
+        }
+      }
+    });
+
+    return Array.from(dataTypeSet).sort();
   }
 
   static getValue(file: LoadedFile, key: string): number | string | null {

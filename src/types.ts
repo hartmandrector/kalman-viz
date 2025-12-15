@@ -15,7 +15,7 @@ export interface ParameterExport {
 
 export interface CSVData {
   headers: string[];
-  rows: Record<string, number>[];
+  rows: Record<string, number | string>[];
 }
 
 export interface LoadedFile {

@@ -1,8 +1,9 @@
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
 import type { LoadedFile, CSVData } from './types';
 import { FileParser } from './parser';
 
-Chart.register(...registerables);
+Chart.register(...registerables, zoomPlugin);
 
 export class ChartRenderer {
   private chart: Chart | null = null;
@@ -120,7 +121,7 @@ export class ChartRenderer {
     this.chart = new Chart(ctx, config);
   }
 
-  plotCSVTimeSeries(files: LoadedFile[], columns: string[]) {
+  plotCSVTimeSeries(files: LoadedFile[], columns: string[], dataTypeFilter: string[] = []) {
     if (columns.length === 0) {
       console.warn('No columns selected');
       return;
@@ -139,30 +140,91 @@ export class ChartRenderer {
     // Find time column (first column or column named 'timestamp', 'time', etc.)
     const timeColumn = csvData.headers[0];
 
-    const datasets = columns.map((column, idx) => {
-      const dataPoints: { x: number, y: number }[] = [];
+    // Check if we need to filter by data_type
+    const hasDataTypeColumn = csvData.headers.includes('data_type');
+    const shouldFilter = hasDataTypeColumn && dataTypeFilter.length > 0;
 
+    // Get list of data types to plot (either filtered or all)
+    let dataTypesToPlot: string[] = [];
+    if (hasDataTypeColumn) {
+      const allDataTypes = new Set<string>();
       csvData.rows.forEach(row => {
-        const xValue = row[timeColumn];
-        const yValue = row[column];
-
-        if (xValue !== undefined && yValue !== undefined) {
-          dataPoints.push({ x: xValue, y: yValue });
+        const dataType = row['data_type'];
+        if (dataType && typeof dataType === 'string') {
+          allDataTypes.add(dataType);
         }
       });
+      dataTypesToPlot = shouldFilter 
+        ? dataTypeFilter 
+        : Array.from(allDataTypes).sort();
+    }
 
-      const color = this.getColor(idx);
+    // Create datasets for each (data_type, column) combination
+    const datasets: any[] = [];
+    let colorIdx = 0;
 
-      return {
-        label: column,
-        data: dataPoints,
-        borderColor: color,
-        backgroundColor: color + '33', // Add transparency
-        borderWidth: 2,
-        pointRadius: 2,
-        tension: 0.1
-      };
-    });
+    if (hasDataTypeColumn && dataTypesToPlot.length > 0) {
+      // Plot each data type and column combination separately
+      dataTypesToPlot.forEach(dataType => {
+        columns.forEach(column => {
+          const dataPoints: { x: number, y: number }[] = [];
+
+          csvData.rows.forEach(row => {
+            const rowDataType = row['data_type'];
+            if (rowDataType !== dataType) {
+              return; // Skip rows that don't match this data type
+            }
+
+            const xValue = row[timeColumn];
+            const yValue = row[column];
+
+            if (xValue !== undefined && yValue !== undefined && typeof xValue === 'number' && typeof yValue === 'number') {
+              dataPoints.push({ x: xValue, y: yValue });
+            }
+          });
+
+          if (dataPoints.length > 0) {
+            const color = this.getColor(colorIdx++);
+
+            datasets.push({
+              label: `${dataType} - ${column}`,
+              data: dataPoints,
+              borderColor: color,
+              backgroundColor: color + '33', // Add transparency
+              borderWidth: 2,
+              pointRadius: 2,
+              tension: 0.1
+            });
+          }
+        });
+      });
+    } else {
+      // No data type column, plot by column only (original behavior)
+      columns.forEach(column => {
+        const dataPoints: { x: number, y: number }[] = [];
+
+        csvData.rows.forEach(row => {
+          const xValue = row[timeColumn];
+          const yValue = row[column];
+
+          if (xValue !== undefined && yValue !== undefined && typeof xValue === 'number' && typeof yValue === 'number') {
+            dataPoints.push({ x: xValue, y: yValue });
+          }
+        });
+
+        const color = this.getColor(colorIdx++);
+
+        datasets.push({
+          label: column,
+          data: dataPoints,
+          borderColor: color,
+          backgroundColor: color + '33', // Add transparency
+          borderWidth: 2,
+          pointRadius: 2,
+          tension: 0.1
+        });
+      });
+    }
 
     // Destroy existing chart
     if (this.csvChart) {
@@ -190,6 +252,24 @@ export class ChartRenderer {
           legend: {
             display: true,
             position: 'top'
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x'
+            },
+            zoom: {
+              wheel: {
+                enabled: true
+              },
+              pinch: {
+                enabled: true
+              },
+              mode: 'x'
+            },
+            limits: {
+              x: { min: 'original', max: 'original' }
+            }
           }
         },
         scales: {
@@ -204,7 +284,8 @@ export class ChartRenderer {
             title: {
               display: true,
               text: 'Value'
-            }
+            },
+            type: 'linear'
           }
         }
       }
