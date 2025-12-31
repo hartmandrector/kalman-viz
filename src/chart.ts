@@ -1,6 +1,6 @@
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
-import type { LoadedFile, CSVData } from './types';
+import type { LoadedFile, CSVData, GPSErrorFile, CorrelationResult } from './types';
 import { FileParser } from './parser';
 
 Chart.register(...registerables, zoomPlugin);
@@ -8,10 +8,14 @@ Chart.register(...registerables, zoomPlugin);
 export class ChartRenderer {
   private chart: Chart | null = null;
   private csvChart: Chart | null = null;
+  private gpsErrorChart: Chart | null = null;
+  private correlationChart: Chart | null = null;
 
   constructor(
     private canvasId: string,
-    private csvCanvasId: string
+    private csvCanvasId: string,
+    private gpsErrorCanvasId: string,
+    private correlationCanvasId: string
   ) {}
 
   plotParameters(files: LoadedFile[], xAxis: string, yAxes: string[]) {
@@ -329,5 +333,207 @@ export class ChartRenderer {
       '#96ceb4'
     ];
     return colors[index % colors.length];
+  }
+
+  plotGPSErrorComparison(gpsErrorFiles: LoadedFile[]) {
+    if (gpsErrorFiles.length === 0) {
+      console.warn('No GPS error files selected');
+      return;
+    }
+
+    // Extract error components for each file
+    const categories = [
+      'position.x', 'position.y', 'position.z',
+      'velocity.x', 'velocity.y', 'velocity.z',
+      'acceleration.x', 'acceleration.y', 'acceleration.z',
+      'fuzz.pos.x', 'fuzz.pos.y', 'fuzz.pos.z',
+      'fuzz.vel.x', 'fuzz.vel.y', 'fuzz.vel.z',
+      'fuzz.acc.x', 'fuzz.acc.y', 'fuzz.acc.z'
+    ];
+
+    const datasets = gpsErrorFiles.map((file, idx) => {
+      const data = file.data as GPSErrorFile;
+      const errors = FileParser.extractGPSErrorDimensions(data.gpsError);
+      
+      // Map to category order
+      const values = [
+        errors['position.x'],
+        errors['position.y'],
+        errors['position.z'],
+        errors['velocity.x'],
+        errors['velocity.y'],
+        errors['velocity.z'],
+        errors['acceleration.x'],
+        errors['acceleration.y'],
+        errors['acceleration.z'],
+        errors['fuzziness.position.x'],
+        errors['fuzziness.position.y'],
+        errors['fuzziness.position.z'],
+        errors['fuzziness.velocity.x'],
+        errors['fuzziness.velocity.y'],
+        errors['fuzziness.velocity.z'],
+        errors['fuzziness.acceleration.x'],
+        errors['fuzziness.acceleration.y'],
+        errors['fuzziness.acceleration.z']
+      ];
+
+      const color = this.getColor(idx);
+
+      return {
+        label: file.name,
+        data: values,
+        backgroundColor: color,
+        borderColor: color,
+        borderWidth: 1
+      };
+    });
+
+    // Destroy existing chart
+    if (this.gpsErrorChart) {
+      this.gpsErrorChart.destroy();
+    }
+
+    // Create new chart
+    const canvas = document.getElementById(this.gpsErrorCanvasId) as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d')!;
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: categories,
+        datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'GPS Error Comparison - All Dimensions',
+            font: { size: 16 }
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Error Dimension'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Error Magnitude'
+            },
+            type: 'logarithmic'
+          }
+        }
+      }
+    };
+
+    this.gpsErrorChart = new Chart(ctx, config);
+  }
+
+  plotCorrelationScatter(correlation: CorrelationResult, regressionLine?: { slope: number; intercept: number }) {
+    if (correlation.dataPoints.length === 0) {
+      console.warn('No data points for correlation');
+      return;
+    }
+
+    const datasets: any[] = [
+      {
+        label: `${correlation.yLabel} vs ${correlation.xLabel}`,
+        data: correlation.dataPoints.map(p => ({ x: p.x, y: p.y })),
+        backgroundColor: this.getColor(0),
+        borderColor: this.getColor(0),
+        pointRadius: 6,
+        pointHoverRadius: 8
+      }
+    ];
+
+    // Add regression line if provided
+    if (regressionLine) {
+      const xValues = correlation.dataPoints.map(p => p.x).sort((a, b) => a - b);
+      const minX = Math.min(...xValues);
+      const maxX = Math.max(...xValues);
+      
+      const regressionPoints = [
+        { x: minX, y: regressionLine.slope * minX + regressionLine.intercept },
+        { x: maxX, y: regressionLine.slope * maxX + regressionLine.intercept }
+      ];
+
+      datasets.push({
+        label: 'Linear Fit',
+        data: regressionPoints,
+        type: 'line',
+        borderColor: '#ff6b6b',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false
+      });
+    }
+
+    // Destroy existing chart
+    if (this.correlationChart) {
+      this.correlationChart.destroy();
+    }
+
+    // Create new chart
+    const canvas = document.getElementById(this.correlationCanvasId) as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d')!;
+
+    const config: ChartConfiguration = {
+      type: 'scatter',
+      data: {
+        datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          title: {
+            display: true,
+            text: `Correlation: ${correlation.xLabel} → ${correlation.yLabel}`,
+            font: { size: 16 }
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context: any) => {
+                const point = context.raw;
+                const dataPoint = correlation.dataPoints[context.dataIndex];
+                return `(${point.x.toFixed(4)}, ${point.y.toFixed(4)}) - ${dataPoint?.label || ''}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: correlation.xLabel
+            },
+            type: 'linear'
+          },
+          y: {
+            title: {
+              display: true,
+              text: correlation.yLabel
+            },
+            type: 'linear'
+          }
+        }
+      }
+    };
+
+    this.correlationChart = new Chart(ctx, config);
   }
 }

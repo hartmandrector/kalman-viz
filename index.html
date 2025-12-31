@@ -68,6 +68,76 @@
     <section class="chart-container">
       <canvas id="csvChart"></canvas>
     </section>
+
+    <section class="gps-error-controls" id="gpsErrorControls" style="display: none;">
+      <h3>GPS Error Comparison</h3>
+      <div class="control-group">
+        <label for="gpsErrorFiles">GPS Error Files to Compare:</label>
+        <select id="gpsErrorFiles" multiple size="5">
+        </select>
+      </div>
+      <button id="compareGpsBtn" class="btn-primary">Compare GPS Errors</button>
+      <button id="exportGpsErrorsBtn" class="btn-secondary">Export Comparison CSV</button>
+    </section>
+
+    <section class="chart-container">
+      <canvas id="gpsErrorChart"></canvas>
+    </section>
+
+    <section class="correlation-controls" id="correlationControls" style="display: none;">
+      <h3>Parameter Correlation Analysis</h3>
+      <p class="info-text">Loaded <span id="sweepCount">0</span> sweep(s) with <span id="runCount">0</span> total runs</p>
+      <div class="control-group">
+        <label for="correlationX">GPS Error Dimension:</label>
+        <select id="correlationX">
+          <option value="">-- Select GPS Error Dimension --</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="correlationY">Output Parameter:</label>
+        <select id="correlationY">
+          <option value="">-- Select Output Parameter --</option>
+        </select>
+      </div>
+      <button id="plotCorrelationBtn" class="btn-primary">Plot Correlation</button>
+      <button id="showTopCorrelationsBtn" class="btn-secondary">Show Top Correlations</button>
+      <div id="correlationInfo" class="correlation-info" style="display: none;">
+        <p><strong>Correlation Coefficient:</strong> <span id="correlationCoeff">-</span></p>
+        <p><strong>R² (Linear Fit):</strong> <span id="rSquared">-</span></p>
+        <p><strong>Linear Model:</strong> <span id="linearEquation">-</span></p>
+      </div>
+    </section>
+
+    <section class="chart-container">
+      <canvas id="correlationChart"></canvas>
+    </section>
+
+    <section class="prediction-controls" id="predictionControls" style="display: none;">
+      <h3>Parameter Prediction</h3>
+      <p class="info-text">Select a GPS error file to predict optimal parameters</p>
+      <div class="control-group">
+        <label for="predictionGpsFile">GPS Error File:</label>
+        <select id="predictionGpsFile">
+          <option value="">-- Select GPS Error File --</option>
+        </select>
+      </div>
+      <button id="predictParametersBtn" class="btn-primary">Predict Parameters</button>
+      <div id="predictionResults" class="prediction-results" style="display: none;">
+        <h4>Predicted Parameters:</h4>
+        <table id="predictionTable">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Predicted Value</th>
+              <th>Based On</th>
+              <th>Model R²</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <button id="exportPredictionBtn" class="btn-secondary">Export Predicted Parameters</button>
+      </div>
+    </section>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

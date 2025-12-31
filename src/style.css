@@ -207,3 +207,83 @@ h3 {
   border-radius: 8px;
   border-left: 4px solid #ffc107;
 }
+
+.gps-error-controls {
+  background: #e8f5e9;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+}
+
+.correlation-controls {
+  background: #e3f2fd;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+}
+
+.prediction-controls {
+  background: #f3e5f5;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #9c27b0;
+}
+
+.info-text {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 15px;
+  font-style: italic;
+}
+
+.correlation-info {
+  background: #fff;
+  padding: 15px;
+  border-radius: 6px;
+  margin-top: 15px;
+  border: 1px solid #ddd;
+}
+
+.correlation-info p {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.correlation-info strong {
+  color: #667eea;
+}
+
+.prediction-results {
+  background: #fff;
+  padding: 15px;
+  border-radius: 6px;
+  margin-top: 15px;
+  border: 1px solid #ddd;
+}
+
+.prediction-results h4 {
+  color: #667eea;
+  margin-bottom: 15px;
+}
+
+#predictionTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#predictionTable th,
+#predictionTable td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+#predictionTable th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #555;
+}
+
+#predictionTable tr:hover {
+  background: #f9f9f9;
+}
